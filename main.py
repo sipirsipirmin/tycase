@@ -1,6 +1,7 @@
 from kubernetes import client, config, watch
 import asyncio, logging
 import os, sys
+from clusters import cluster_config_file_paths
 
 ANN_KEY = 'hayde.trendyol.io/enabled'
 ANN_VALUE = 'true'
@@ -55,7 +56,7 @@ class ServiceAnnotationWatcher:
 
                 logger.info("Event: %s %s %s" % (event['type'], event['object'].kind, event['object'].metadata.name))
                 logger.info("Something changed. Nginx configs will be update")
-                create_nginx_configuration_file_for_compatible_services(tmp_compatible_services, nginx_template)
+                create_nginx_configuration_file_for_compatible_services(tmp_compatible_services)
                 await asyncio.sleep(0)
 
 def get_nginx_template():
@@ -64,30 +65,27 @@ def get_nginx_template():
     template_file.close()
     return template
 
-def create_nginx_configuration_file_for_compatible_services(compatible_services, nginx_template):
+def create_nginx_configuration_file_for_compatible_services(compatible_services):
+    nginx_template = get_nginx_template()
     for service_name in compatible_services.keys():
         nginx_server_name = '.'.join([service_name, DOMAIN_NAME])
         nginx_conf_file_name = '.'.join([nginx_server_name, 'conf'])
         nginx_conf_file_path = os.path.join(NGINX_CONFIG_PATH, nginx_conf_file_name)
 
-        #nginx_config_file = open(nginx_conf_file_path, 'w')
-        print(nginx_template %(
-                            nginx_server_name,compatible_services[service_name]['cluster_ip'],
-                            compatible_services[service_name]['port'])
-                        )
-        #nginx_config_file.write(nginx_template %(
-                                            # nginx_server_name,compatible_services[service_name]['cluster_ip'],
-                                            # compatible_services[service_name]['port'])
-                                            # )
-        #nginx_config_file.close()
+        nginx_config_file = open(nginx_conf_file_path, 'w')
+        nginx_config_file.write(nginx_template %(
+                                            nginx_server_name,compatible_services[service_name]['cluster_ip'],
+                                            compatible_services[service_name]['port'])
+                                            )
+        nginx_config_file.close()
 
- 
+clusters = []
 
-cluster1 = ServiceAnnotationWatcher(config_file=None)
+if __name__ == "__main__":
+    # initialize cluster watchers
+    for index, cluster_config_file_path in enumerate(cluster_config_file_paths):
+        clusters.append(ServiceAnnotationWatcher(config_file=cluster_config_file_path))
 
-nginx_template = get_nginx_template()
-#create_nginx_configuration_file_for_compatible_services(compatible_services, nginx_template)
-
-ioloop = asyncio.get_event_loop()
-ioloop.create_task(cluster1.fallow_the_white_rabbit())
-ioloop.run_forever()
+        ioloop = asyncio.get_event_loop()
+        ioloop.create_task(clusters[index].fallow_the_white_rabbit())
+        ioloop.run_forever()
