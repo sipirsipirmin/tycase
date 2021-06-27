@@ -79,6 +79,7 @@ def create_nginx_configuration_file_for_compatible_services(compatible_services)
                                             compatible_services[service_name]['port'])
                                             )
         nginx_config_file.close()
+    os.system("systemctl reload nginx")  # well..
 
 
 clusters = []
