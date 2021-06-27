@@ -3,10 +3,10 @@ import asyncio, logging
 import os, sys
 from clusters import cluster_config_file_paths
 
-ANN_KEY = 'hayde.trendyol.io/enabled'
-ANN_VALUE = 'true'
-NGINX_CONFIG_PATH = '/etc/nginx/conf.d/'
-DOMAIN_NAME = 'sipirsipirmin.com'
+ANN_KEY = os.environ.get('ANN_KEY','hayde.trendyol.io/enabled')
+ANN_VALUE = os.environ.get('ANN_VALUE', 'true')
+NGINX_CONFIG_PATH = os.environ.get('NGINX_CONFIG_PATH','/etc/nginx/conf.d/')
+DOMAIN_NAME = os.environ.get("DOMAIN_NAME", 'sipirsipirmin.com')
 
 
 logger = logging.getLogger()
@@ -25,8 +25,7 @@ class ServiceAnnotationWatcher:
 
     def initialize_kube_client(self):
         config.load_kube_config(config_file=self.config_file)
-        v1 = client.CoreV1Api()
-        return v1
+        return client.CoreV1Api()
 
     def get_services(self):
         return self.kube_client.list_service_for_all_namespaces(watch=False)
@@ -51,7 +50,7 @@ class ServiceAnnotationWatcher:
             tmp_compatible_services = self.get_annotation_compatible_services(
                                                             self.get_services())
             
-            if len(self.compatible_services.keys()) != len(tmp_compatible_services.keys()):
+            if len(self.compatible_services.keys()) != len(tmp_compatible_services.keys()): # hımm!
                 self.compatible_services = tmp_compatible_services
 
                 logger.info("Event: %s %s %s" % (event['type'], event['object'].kind, event['object'].metadata.name))
@@ -59,11 +58,13 @@ class ServiceAnnotationWatcher:
                 create_nginx_configuration_file_for_compatible_services(tmp_compatible_services)
                 await asyncio.sleep(0)
 
+
 def get_nginx_template():
     template_file = open("nginx.conf.template", "r")
     template = template_file.read()
     template_file.close()
     return template
+
 
 def create_nginx_configuration_file_for_compatible_services(compatible_services):
     nginx_template = get_nginx_template()
@@ -78,6 +79,7 @@ def create_nginx_configuration_file_for_compatible_services(compatible_services)
                                             compatible_services[service_name]['port'])
                                             )
         nginx_config_file.close()
+
 
 clusters = []
 
