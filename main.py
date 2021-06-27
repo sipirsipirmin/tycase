@@ -46,17 +46,22 @@ class ServiceAnnotationWatcher:
         return annotation_positive
     
     async def fallow_the_white_rabbit(self):
-        w = watch.Watch()
-        for event in w.stream(self.kube_client.list_service_for_all_namespaces, _request_timeout=120):
-            tmp_compatible_services = self.get_annotation_compatible_services(
-                                                            self.get_services())
-            
-            if len(self.compatible_services.keys()) != len(tmp_compatible_services.keys()): # hımm!
-                self.compatible_services = tmp_compatible_services
-                service_name = event['object'].metadata.name
-                logger.info("Event: %s %s %s" % (event['type'], event['object'].kind, service_name))
-                create_nginx_configuration_file_for_compatible_services(tmp_compatible_services, self.cluster_index )
-                await asyncio.sleep(0)
+        try:
+            w = watch.Watch()
+            for event in w.stream(self.kube_client.list_service_for_all_namespaces, _request_timeout=120):
+                tmp_compatible_services = self.get_annotation_compatible_services(
+                                                                self.get_services())
+                
+                if len(self.compatible_services.keys()) != len(tmp_compatible_services.keys()): # hımm!
+                    self.compatible_services = tmp_compatible_services
+                    service_name = event['object'].metadata.name
+                    logger.info("Event: %s %s %s" % (event['type'], event['object'].kind, service_name))
+                    create_nginx_configuration_file_for_compatible_services(tmp_compatible_services, self.cluster_index )
+                    await asyncio.sleep(0)
+        except Exception as e:
+            logger.info(e)
+            w.stop()
+        
 
 
 def get_nginx_template():
