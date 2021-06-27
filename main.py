@@ -23,6 +23,7 @@ class ServiceAnnotationWatcher:
         self.cluster_index = cluster_index
         all_services = self.get_services()
         self.compatible_services = self.get_annotation_compatible_services(all_services)
+        create_nginx_configuration_file_for_compatible_services(self.compatible_services, self.cluster_index )
 
     def initialize_kube_client(self):
         config.load_kube_config(config_file=self.config_file)
