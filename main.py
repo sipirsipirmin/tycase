@@ -59,8 +59,10 @@ class ServiceAnnotationWatcher:
                     create_nginx_configuration_file_for_compatible_services(tmp_compatible_services, self.cluster_index )
                     await asyncio.sleep(0)
         except Exception as e:
-            logger.info(e)
+            logger.info("something happened")
+            logger.error(e)
             w.stop()
+            sys.exit(1)
         
 
 
