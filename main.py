@@ -75,7 +75,6 @@ def get_nginx_template():
     return template
 
 
-
 def create_nginx_configuration_file_for_compatible_services(compatible_services, cluster_index):
     nginx_template = get_nginx_template()
     services_configs = []    
